@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class HighScoreMenuUI : MonoBehaviour
+public class HowToPlayUI : MonoBehaviour
 {
     [SerializeField] private TitleMenuUI titleMenu;
 

@@ -1,53 +1,31 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using TMPro;
 
 public class TitleMenuUI : MonoBehaviour
 {
+    [SerializeField] private HowToPlayUI howToPlayMenu;
     [SerializeField] private HighScoreMenuUI highScoreMenu;
 
-    private void Start()
+    public void StartGameButton_Clicked()
     {
-        //**************************
-        // Need to read data...
+        GameManager.instance.StartGame();
     }
 
-
-
-    private void ReadData()
+    public void HowToPlayButton_Clicked()
     {
-
+        howToPlayMenu.gameObject.SetActive(true);
+        gameObject.SetActive(false);
     }
 
-    private void SaveData()
-    {
-
-    }
-
-    public void HighScoresMenu()
+    public void HighScoresButton_Clicked()
     {
         highScoreMenu.gameObject.SetActive(true);
         gameObject.SetActive(false);
     }
 
-    public void StartGame()
+    public void ExitGameButton_Clicked()
     {
-        SceneManager.LoadScene(1);
-    }
-
-    public void ExitGame()
-    {
-        //*****************************
-        // Need to save data...
-
-
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.ExitPlaymode();
-        return;
-#endif
-
-        Application.Quit();
+        GameManager.instance.ExitGame();
     }
 }
