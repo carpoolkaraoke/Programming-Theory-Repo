@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -13,6 +14,7 @@ public class GameManager : MonoBehaviour
 
     public static GameManager instance;
 
+    //private 
     private GameOverUI gameOverMenu;
 
     private void Awake()
@@ -25,6 +27,7 @@ public class GameManager : MonoBehaviour
         }
 
         instance = this;
+        LoadHighScores();
         DontDestroyOnLoad(instance);
     }
 
@@ -32,11 +35,6 @@ public class GameManager : MonoBehaviour
     {
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
-
-    /*private void Start()
-    {
-        gameOverMenu.gameObject.SetActive(false);
-    }*/
 
     private void OnDisable()
     {
@@ -99,11 +97,44 @@ public class GameManager : MonoBehaviour
     {
         //******************************
         // Need to save high score data...
+        SaveHighScores();
 
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.ExitPlaymode();
 #endif
 
         Application.Quit();
+    }
+
+    [System.Serializable] class SaveData
+    {
+        public HighScore highScore;
+    }
+
+    public void SaveHighScores()
+    {
+        SaveData data = new SaveData();
+
+        //**************************
+        //...
+        data.highScore = new HighScore("a-dog", 35);
+
+        string json = JsonUtility.ToJson(data);
+
+        File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+    }
+
+    public void LoadHighScores()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            SaveData data = JsonUtility.FromJson<SaveData>(json);
+
+            //**********************
+            //print($"{data.highScore.name} Score : {data.highScore.score}");
+            print(data.highScore);
+        }
     }
 }
