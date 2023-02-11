@@ -5,21 +5,26 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public abstract class SphereController : MonoBehaviour
 {
+    // *** Encapsulation ***
+    [Header("Fields")]
     [SerializeField] private float moveForce;
+    [SerializeField] private float getUnstuckDirectionRatio;
     [SerializeField] protected float reactDistance;
 
+    // *** Encapsulation ***
+    private int stuckCount;
     private Vector3 direction;
     protected Rigidbody sphereRb;
-    private SpotlightController spotlight;
+    protected TransporterController spotlight;
 
-    private void Awake()
+    protected virtual void Awake()
     {
         sphereRb = GetComponent<Rigidbody>();
     }
 
     private void Start()
     {
-        spotlight = FindObjectOfType<SpotlightController>();
+        spotlight = FindObjectOfType<TransporterController>();
 
         float angleRad = Random.Range(0f, 2 * Mathf.PI);
         direction = new Vector3(Mathf.Cos(angleRad), Mathf.Sin(angleRad));
@@ -27,19 +32,36 @@ public abstract class SphereController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        // *** Abstraction ***
         AddForces();
         ExtraStuffFixedUpdate();
     }
 
     private void Update()
     {
-
+        // *** Abstraction ***
         ExtraStuffUpdate();
     }
 
-    private void OnCollisionEnter(Collision collision)
+    protected virtual void OnCollisionEnter(Collision collision)
     {
         direction = sphereRb.velocity.normalized;
+    }
+
+    private void OnCollisionStay(Collision collision)
+    {
+        stuckCount += 1;
+        if (stuckCount > 100)
+        {
+            // *** Abstraction ***
+            GetUnstuck(collision);
+            stuckCount = 0;
+        }
+    }
+
+    private void OnCollisionExit()
+    {
+        stuckCount = 0;
     }
 
     private void AddForces()
@@ -47,16 +69,36 @@ public abstract class SphereController : MonoBehaviour
         sphereRb.AddForce(moveForce * direction);
     }
 
-    protected float ValueAtDistance(float minValue, float maxValue, bool isFixedUpdate)
+    private void GetUnstuck(Collision collision)
     {
-        Vector3 position = isFixedUpdate ? sphereRb.position : transform.position;
-        float distance = (position - spotlight.PositionZeroZ()).magnitude;
-        float valueAtDistance = (distance > reactDistance) ? minValue : minValue + (maxValue - minValue) * (reactDistance - distance) / reactDistance;
-
-        return valueAtDistance;
+        if (collision.gameObject.CompareTag("Bottom Wall"))
+        {
+            direction.y = getUnstuckDirectionRatio;
+            direction.Normalize();
+        }
+        else if (collision.gameObject.CompareTag("Top Wall"))
+        {
+            direction.y = -getUnstuckDirectionRatio;
+            direction.Normalize();
+        }
+        else if (collision.gameObject.CompareTag("Left Wall"))
+        {
+            direction.x = getUnstuckDirectionRatio;
+            direction.Normalize();
+        }
+        else if (collision.gameObject.CompareTag("Right Wall"))
+        {
+            direction.x = -getUnstuckDirectionRatio;
+            direction.Normalize();
+        }
     }
 
+    // *** Polymorphism ***
+    protected abstract float ValueAtDistance(float minValue, float maxValue, bool isFixedUpdate);
+
+    // *** Polymorphism ***
     protected abstract void ExtraStuffFixedUpdate();
 
+    // *** Polymorphism ***
     protected abstract void ExtraStuffUpdate();
 }

@@ -4,9 +4,14 @@
 TagManager:
   serializedVersion: 2
   tags:
-  - Horizontal Wall
-  - Vertical Wall
   - Sphere
+  - Bumper
+  - Blue Comet
+  - Red Comet
+  - Top Wall
+  - Bottom Wall
+  - Left Wall
+  - Right Wall
   layers:
   - Default
   - TransparentFX
@@ -14,7 +19,7 @@ TagManager:
   - 
   - Water
   - UI
-  - Spotlight
+  - Transporter Controller
   - Sphere
   - 
   - 

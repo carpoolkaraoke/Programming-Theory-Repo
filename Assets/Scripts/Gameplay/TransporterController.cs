@@ -2,15 +2,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SpotlightController : MonoBehaviour
+public class TransporterController : MonoBehaviour
 {
     // *** Encapsulation ***
     [Header("In-Scene Game Objects")]
     [SerializeField] private Light spotlight;
+    [SerializeField] private SphereCollider bumper;
 
     // *** Encapsulation ***
     private float spotlightPositionZ;
-    private float spotlightRange;
+    private float rayRange;
 
     private void Start()
     {
@@ -21,6 +22,11 @@ public class SpotlightController : MonoBehaviour
     private void Update()
     {
         if (Input.GetMouseButtonDown(0))
+        {
+            // *** Abstraction ***
+            MoveBumper();
+        }
+        if (Input.GetMouseButtonDown(1))
         {
             // *** Abstraction ***
             MoveSpotlight();
@@ -35,18 +41,29 @@ public class SpotlightController : MonoBehaviour
     private void InitializeFields()
     {
         spotlightPositionZ = spotlight.transform.position.z;
-        spotlightRange = spotlight.range;
+        rayRange = 2 * Mathf.Abs(Camera.main.transform.position.z);
     }
 
     private void MoveSpotlight()
     {
         int layermask = 1 << 6;
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hitInfo, spotlightRange, layermask))
+        if (Physics.Raycast(ray, out RaycastHit hitInfo, rayRange, layermask))
         {
             Vector3 position = hitInfo.point;
             position.z = spotlightPositionZ;
             spotlight.transform.position = position;
+        }
+    }
+
+    private void MoveBumper()
+    {
+        int layermask = 1 << 6;
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray, out RaycastHit hitInfo, rayRange, layermask))
+        {
+            Vector3 position = hitInfo.point;
+            bumper.transform.position = position;
         }
     }
 }

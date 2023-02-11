@@ -1,34 +1,48 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
+    // *** Singleton Pattern ***
+    public static GameManager Instance;
+
+    private GmSaveLoadData gmSaveLoadData;
+    private GmHighScores gmHighScores;
+    private GmGameplay gmGameplay;
+
+    // *** Encapsulation ***
     [Header("Prefabs")]
-    [SerializeField] private SphereController cometPrefab;
-    [SerializeField] private SphereController bumperPrefab;
+    [SerializeField] private BumperController bumperPrefab;
+    [SerializeField] private CometController blueCometPrefab;
+    [SerializeField] private CometController redCometPrefab;    
+
+    // *** Encapsulation ***
+    private TitleMenuUI titleMenuUI;
+    private HowToPlayUI howToPlayUI;
+    private HighScoreMenuUI highScoresUI;
+    private ScoreTimeUI scoreTimeUI;
+    private GameOverUI gameOverUI;
 
 
-    public static GameManager instance;
-
-    //private 
-    private GameOverUI gameOverMenu;
+    #region MonoBehaviour
 
     private void Awake()
     {
-        if (instance != null)
+        if (Instance != null)
         {
             Destroy(gameObject);
 
             return;
         }
 
-        instance = this;
-        LoadHighScores();
-        DontDestroyOnLoad(instance);
+        Instance = this;
+        DontDestroyOnLoad(Instance);
+        Init();
     }
 
     private void OnEnable()
@@ -36,105 +50,135 @@ public class GameManager : MonoBehaviour
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            gmGameplay.PauseUnpause();
+        }
+    }
+
     private void OnDisable()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
+    #endregion MonoBehaviour
+
+    private void Init()
+    {
+        gmHighScores = new GmHighScores();
+        gmSaveLoadData = new GmSaveLoadData();
+        gmGameplay = new GmGameplay();
+
+        gmSaveLoadData.LoadData(gmHighScores.SetHighScores);
+    }
+
+    public void IncreaseScore(Collision collision)
+    {
+        gmGameplay.IncreaseScore(collision, scoreTimeUI);
+    }
+
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (scene.buildIndex == 1)
+        if (scene.buildIndex == 0)
         {
-            //**************************************
-            gameOverMenu = FindObjectOfType<GameOverUI>();
-            gameOverMenu.gameObject.SetActive(false);
+            titleMenuUI = FindObjectOfType<TitleMenuUI>();
+            titleMenuUI.Init(StartGame, HowToPlayFromTitleMenu, HighScoresFromTitleMenu, ExitGame);
 
-            StartCoroutine(CountdownTime());
+            howToPlayUI = FindObjectOfType<HowToPlayUI>();
+            howToPlayUI.Init(TitleMenuFromHowToPlay);
+            howToPlayUI.gameObject.SetActive(false);
 
-            for (int i = 0; i < 5; i++)
-            {
-                Vector3 spawnPos = new Vector3(Random.Range(-17f, 17f), Random.Range(-9f, 9));
-                Instantiate(cometPrefab, spawnPos, Quaternion.identity);
+            highScoresUI = FindObjectOfType<HighScoreMenuUI>();
+            highScoresUI.Init(TitleMenuFromHighScores, gmHighScores.ReportHighScores);
+            highScoresUI.gameObject.SetActive(false);
+        }
+        else if (scene.buildIndex == 1)
+        {
+            gameOverUI = FindObjectOfType<GameOverUI>();
+            gameOverUI.Init(StartGame, HighScoresFromGameOver, MainMenuFromGameOver, gmHighScores.UpdateHighScores, gmGameplay.GetScore);
+            gameOverUI.gameObject.SetActive(false);
 
-                spawnPos = new Vector3(Random.Range(-17f, 17f), Random.Range(-9f, 9));
-                Instantiate(bumperPrefab, spawnPos, Quaternion.identity);
-            }
+            highScoresUI = FindObjectOfType<HighScoreMenuUI>();
+            highScoresUI.Init(GameOverFromHighScores, gmHighScores.ReportHighScores);
+            highScoresUI.gameObject.SetActive(false);
+
+            scoreTimeUI = FindObjectOfType<ScoreTimeUI>();
+
+            StartCoroutine(gmGameplay.StartNewGame(scoreTimeUI, GameOver));
         }
     }
 
-    private IEnumerator CountdownTime()
-    {
-        ScoreTimeUI scoreTimeUI = FindObjectOfType<ScoreTimeUI>();
-
-        int timeRemaining = 10;
-        while (timeRemaining >= 0)
-        {
-            scoreTimeUI.UpdateTime(timeRemaining);
-            timeRemaining -= 1;
-
-            yield return new WaitForSeconds(1);            
-        }
-
-        GameOver();
-    }
-
-    public void TitleScreen()
-    {
-        SceneManager.LoadScene(0);
-    }
-
-    public void StartGame()
+    private void StartGame()
     {
         SceneManager.LoadScene(1);
     }
 
-    private void GameOver()
+    private void HowToPlayFromTitleMenu()
     {
-        gameOverMenu.gameObject.SetActive(true);
+        howToPlayUI.gameObject.SetActive(true);
+        titleMenuUI.gameObject.SetActive(false);
     }
 
-    public void ExitGame()
+    private void TitleMenuFromHowToPlay()
     {
-        //******************************
-        // Need to save high score data...
-        SaveHighScores();
+        titleMenuUI.gameObject.SetActive(true);
+        howToPlayUI.gameObject.SetActive(false);
+    }
+
+    private void HighScoresFromTitleMenu()
+    {
+        highScoresUI.gameObject.SetActive(true);
+        titleMenuUI.gameObject.SetActive(false);
+    }
+
+    private void TitleMenuFromHighScores()
+    {
+        titleMenuUI.gameObject.SetActive(true);
+        highScoresUI.gameObject.SetActive(false);
+    }
+
+    private void HighScoresFromGameOver()
+    {
+        highScoresUI.gameObject.SetActive(true);
+        gameOverUI.gameObject.SetActive(false);
+    }
+
+    private void GameOverFromHighScores()
+    {
+        gameOverUI.gameObject.SetActive(true);
+        highScoresUI.gameObject.SetActive(false);
+    }
+
+    private void MainMenuFromGameOver()
+    {
+        SceneManager.LoadScene(0);
+    }
+
+    private void GameOver(int score)
+    {
+        gameOverUI.gameObject.SetActive(true);
+        if (gmHighScores.IsHighScore(score))
+        {
+            gameOverUI.ShowHighScoreText();
+            gameOverUI.ShowNameInputField();
+        }
+    }
+
+    /*private void UpdateHighScores(HighScore highScore)
+    {
+        gmHighScores.UpdateHighScores(highScore);
+    }*/
+
+    private void ExitGame()
+    {
+        gmSaveLoadData.SaveData(gmHighScores.HighScores);
+
+        Application.Quit();
 
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.ExitPlaymode();
 #endif
-
-        Application.Quit();
-    }
-
-    [System.Serializable] class SaveData
-    {
-        public HighScore highScore;
-    }
-
-    public void SaveHighScores()
-    {
-        SaveData data = new SaveData();
-
-        //**************************
-        //...
-        data.highScore = new HighScore("a-dog", 35);
-
-        string json = JsonUtility.ToJson(data);
-
-        File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
-    }
-
-    public void LoadHighScores()
-    {
-        string path = Application.persistentDataPath + "/savefile.json";
-        if (File.Exists(path))
-        {
-            string json = File.ReadAllText(path);
-            SaveData data = JsonUtility.FromJson<SaveData>(json);
-
-            //**********************
-            //print($"{data.highScore.name} Score : {data.highScore.score}");
-            print(data.highScore);
-        }
     }
 }

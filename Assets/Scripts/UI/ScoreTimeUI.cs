@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -5,8 +6,9 @@ using UnityEngine;
 
 public class ScoreTimeUI : MonoBehaviour
 {
-    [SerializeField] TextMeshProUGUI scoreText;
-    [SerializeField] TextMeshProUGUI timeText;
+    // *** Encapsulation ***
+    [SerializeField] private TextMeshProUGUI scoreText;
+    [SerializeField] private  TextMeshProUGUI timeText;
 
     public void UpdateScore(int score)
     {
